@@ -1,18 +1,20 @@
 #
-# 2023.02.04  编译op
+# https://github.com/P3TERX/Actions-OpenWrt
 #
-name: 编译op
+# File: .github/workflows/openwrt-bulder.yml
+# Description: Build OpenWrt using GitHub Actions
+#
+# Copyright (c) 2019-2024 P3TERX <https://p3terx.com>
+#
+# This is free software, licensed under the MIT License.
+# See /LICENSE for more information.
+#
+
+name: OpenWrt Builder
+
 on:
   repository_dispatch:
   workflow_dispatch:
-    inputs:
-      ssh:
-        description: 'SSH connection to Actions'
-        required: false
-        default: 'false'
-# 定时触发开始编译(把下面两个#去掉开启,时间设置请看定时编译说明)
-#  schedule:
-#   - cron: 0 16 */2 * *
 
 env:
   REPO_URL: https://github.com/coolsnowwolf/lede
@@ -28,10 +30,12 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-22.04
 
     steps:
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v1
+    
     - name: Checkout
       uses: actions/checkout@main
 
@@ -39,6 +43,8 @@ jobs:
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
+        sudo rm -rf node_modules/
+        sudo rm -rf package-lock.json
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
         sudo docker image prune --all --force
         sudo -E apt-get -qq update
@@ -76,15 +82,8 @@ jobs:
         chmod +x $DIY_P2_SH
         cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-      
-    - name: SSH远程连接（配置固件）
-      uses: P3TERX/ssh2actions@main
-      if: (github.event.inputs.ssh == 'true' && github.event.inputs.ssh  != 'false') || contains(github.event.action, 'ssh')
-      env:
-        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }} 
-    
-   - name: Download package
+
+    - name: Download package
       id: package
       run: |
         cd openwrt
